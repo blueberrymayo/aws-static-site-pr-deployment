@@ -1,0 +1,146 @@
+name: PR Test on Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  test-pr-on-comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.issue.pull_request &&
+      (
+        contains(github.event.comment.body, 'please test') ||
+        contains(github.event.comment.body, 'Please test') ||
+        contains(github.event.comment.body, 'run tests') ||
+        contains(github.event.comment.body, 'test this') ||
+        contains(github.event.comment.body, 'test pr') ||
+        contains(github.event.comment.body, '/test')
+      )
+    name: Test PR on Request
+
+    steps:
+      - name: Debug comment trigger
+        run: |
+          echo "Comment triggered by: ${{ github.event.comment.user.login }}"
+          echo "Comment body: ${{ github.event.comment.body }}"
+          echo "PR number: ${{ github.event.issue.number }}"
+
+      - name: Get PR details
+        id: pr
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              sha: pr.head.sha,
+              ref: pr.head.ref,
+              number: context.issue.number
+            };
+
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.pr.outputs.result).sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Wait for CloudFront invalidation to complete
+        run: |
+          PR_NUMBER="${{ fromJson(steps.pr.outputs.result).number }}"
+          PR_PATH="/pr-${PR_NUMBER}/*"
+          echo "Looking for active CloudFront invalidations for path: ${PR_PATH}"
+
+          # List recent invalidations for this distribution
+          echo "Querying recent invalidations..."
+          INVALIDATIONS=$(aws cloudfront list-invalidations \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --max-items 10 \
+            --query 'InvalidationList.Items[?Status==`InProgress`].[Id,CreateTime,Status]' \
+            --output text)
+
+          if [ -z "$INVALIDATIONS" ]; then
+            echo "No in-progress invalidations found. Checking if PR site is accessible..."
+          else
+            echo "Found in-progress invalidations:"
+            echo "$INVALIDATIONS"
+
+            # Get the most recent invalidation ID (they're returned in reverse chronological order)
+            LATEST_INVALIDATION_ID=$(echo "$INVALIDATIONS" | head -n1 | cut -f1)
+
+            if [ -n "$LATEST_INVALIDATION_ID" ]; then
+              echo "Waiting for invalidation ${LATEST_INVALIDATION_ID} to complete..."
+
+              # Wait for the invalidation with a 15-minute timeout
+              timeout 900 aws cloudfront wait invalidation-completed \
+                --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+                --id $LATEST_INVALIDATION_ID || {
+                echo "⚠️ Invalidation wait timed out, proceeding with connectivity test"
+              }
+
+              echo "✅ CloudFront invalidation completed (or timed out)"
+            fi
+          fi
+
+          # Test if the PR site is actually accessible (regardless of invalidation status)
+          PR_URL="https://pr-${PR_NUMBER}.${{ vars.DOMAIN }}"
+          echo "Testing connectivity to ${PR_URL}..."
+
+          MAX_ATTEMPTS=20
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            if curl -sSf "${PR_URL}" >/dev/null 2>&1; then
+              echo "✅ PR site is accessible and serving content"
+              break
+            else
+              echo "⏳ Waiting for PR site... (attempt $i/$MAX_ATTEMPTS)"
+              if [ $i -eq $MAX_ATTEMPTS ]; then
+                echo "❌ PR site not accessible after $MAX_ATTEMPTS attempts"
+                exit 1
+              fi
+              sleep 15
+            fi
+          done
+
+      - name: Run E2E tests against deployed PR
+        uses: ./.github/actions/cypress-test
+        with:
+          base-url: 'https://pr-${{ fromJson(steps.pr.outputs.result).number }}.${{ vars.DOMAIN }}'
+          test-mode: 'pr-comment-triggered'
+          wait-for-server: 'false'
+
+      - name: Comment test results
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const testStatus = '${{ job.status }}' === 'success' ? '✅ Tests PASSED' : '❌ Tests FAILED';
+            const testIcon = '${{ job.status }}' === 'success' ? '🎉' : '🚨';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${testIcon} **E2E Test Results:** ${testStatus}\n\n🌐 **Tested URL:** https://pr-${{ fromJson(steps.pr.outputs.result).number }}.${{ vars.DOMAIN }}\n\n🧪 **Triggered by:** @${{ github.event.comment.user.login }}\n\n📊 Check the [Actions tab](https://github.com/${{ github.repository }}/actions) for detailed results`
+            })

@@ -1,0 +1,61 @@
+name: PR Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup-pr-deployment:
+    runs-on: ubuntu-latest
+    name: Cleanup PR Deployment
+    if: github.event.pull_request.merged == true || github.event.pull_request.merged == false
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Clean up PR deployment folder
+        run: |
+          PR_FOLDER_NAME="pr-${{ github.event.pull_request.number }}"
+          echo "Cleaning up PR deployment folder: ${PR_FOLDER_NAME}"
+
+          # Check if the folder exists before trying to delete
+          if aws s3 ls "s3://${{ vars.S3_BUCKET_NAME }}/${PR_FOLDER_NAME}/" >/dev/null 2>&1; then
+            echo "Deleting S3 folder: s3://${{ vars.S3_BUCKET_NAME }}/${PR_FOLDER_NAME}/"
+            aws s3 rm "s3://${{ vars.S3_BUCKET_NAME }}/${PR_FOLDER_NAME}/" --recursive
+
+            # Create CloudFront invalidation to clear cache
+            echo "Creating CloudFront invalidation for cleanup..."
+            aws cloudfront create-invalidation \
+              --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/${PR_FOLDER_NAME}/*" >/dev/null || true
+
+            echo "✅ PR deployment folder ${PR_FOLDER_NAME} cleaned up successfully"
+          else
+            echo "ℹ️ PR deployment folder ${PR_FOLDER_NAME} not found, nothing to clean up"
+          fi
+
+      - name: Comment cleanup status
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            const message = '${{ job.status }}' === 'success'
+              ? `PR deployment folder \`pr-${{ github.event.pull_request.number }}\` has been cleaned up from S3`
+              : `Failed to clean up PR deployment folder \`pr-${{ github.event.pull_request.number }}\``;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧹 **PR Cleanup:** ${status} ${message}`
+            })

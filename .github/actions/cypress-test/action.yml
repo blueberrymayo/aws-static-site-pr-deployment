@@ -1,0 +1,164 @@
+name: 'Run Cypress Tests'
+description: 'Runs Cypress E2E tests with comprehensive logging and reporting'
+
+inputs:
+  base-url:
+    description: 'Base URL to test against'
+    required: true
+  test-mode:
+    description: 'Test mode: local or production'
+    required: false
+    default: 'local'
+  wait-for-server:
+    description: 'Whether to wait for server to be ready'
+    required: false
+    default: 'false'
+  server-command:
+    description: 'Command to start the server (if wait-for-server is true)'
+    required: false
+    default: 'npm run preview'
+  cypress-config:
+    description: 'Additional Cypress configuration'
+    required: false
+    default: ''
+
+outputs:
+  test-results:
+    description: 'Test results summary'
+    value: ${{ steps.test-results.outputs.results }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache Cypress binary
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/Cypress
+        key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          cypress-${{ runner.os }}-
+
+    - name: Install Cypress dependencies
+      shell: bash
+      run: |
+        echo "Installing all dependencies (including Cypress)..."
+        npm ci || npm install
+        echo "Cypress installation complete"
+
+    - name: Verify Cypress installation
+      shell: bash
+      run: |
+        echo "Verifying Cypress installation..."
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "Checking if Cypress is installed:"
+        npm list cypress || echo "Cypress not found in package list"
+        echo "Checking Cypress binary:"
+        npx cypress version || echo "Cypress binary not available"
+        npx cypress verify
+
+    - name: Start server and wait for readiness
+      if: inputs.wait-for-server == 'true'
+      shell: bash
+      run: |
+        echo "Starting server with command: ${{ inputs.server-command }}"
+        ${{ inputs.server-command }} &
+        SERVER_PID=$!
+        echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+        # Wait for server to be ready
+        echo "Waiting for server to be ready at ${{ inputs.base-url }}"
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          if curl -sSf "${{ inputs.base-url }}" > /dev/null 2>&1; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Waiting for server... ($timeout seconds remaining)"
+          sleep 2
+          timeout=$((timeout - 2))
+        done
+
+        if [ $timeout -le 0 ]; then
+          echo "Server failed to start within timeout"
+          exit 1
+        fi
+
+    - name: Run Cypress tests
+      shell: bash
+      run: |
+        echo "Running Cypress tests against ${{ inputs.base-url }}"
+        echo "Test mode: ${{ inputs.test-mode }}"
+
+        # Debug: Check current directory and files
+        echo "Current working directory: $(pwd)"
+        echo "Files in current directory:"
+        ls -la
+        echo "Looking for cypress.config.js:"
+        ls -la cypress.config.* || echo "No cypress.config files found"
+
+        # Set environment variables
+        export CYPRESS_BASE_URL="${{ inputs.base-url }}"
+        export CYPRESS_TEST_MODE="${{ inputs.test-mode }}"
+
+        # Create results directory
+        mkdir -p tests/results
+
+        # Run Cypress tests with proper configuration
+        if [ -n "${{ inputs.cypress-config }}" ]; then
+          npx cypress run --config-file cypress.config.js --config baseUrl=${{ inputs.base-url }},${{ inputs.cypress-config }} \
+            --reporter json --reporter-options "output=tests/results/results.json" \
+            || echo "CYPRESS_FAILED=true" >> $GITHUB_ENV
+        else
+          npx cypress run --config-file cypress.config.js --config baseUrl=${{ inputs.base-url }} \
+            --reporter json --reporter-options "output=tests/results/results.json" \
+            || echo "CYPRESS_FAILED=true" >> $GITHUB_ENV
+        fi
+
+    - name: Stop server
+      if: always() && inputs.wait-for-server == 'true'
+      shell: bash
+      run: |
+        if [ -n "$SERVER_PID" ]; then
+          echo "Stopping server (PID: $SERVER_PID)"
+          kill $SERVER_PID || true
+          wait $SERVER_PID 2>/dev/null || true
+        fi
+
+    - name: Process test results
+      id: test-results
+      if: always()
+      shell: bash
+      run: |
+        echo "Processing test results..."
+
+        if [ -f "tests/results/results.json" ]; then
+          # Extract test summary from results
+          TOTAL_TESTS=$(cat tests/results/results.json | grep -o '"tests":[0-9]*' | cut -d':' -f2 || echo "0")
+          PASSED_TESTS=$(cat tests/results/results.json | grep -o '"passes":[0-9]*' | cut -d':' -f2 || echo "0")
+          FAILED_TESTS=$(cat tests/results/results.json | grep -o '"failures":[0-9]*' | cut -d':' -f2 || echo "0")
+
+          RESULTS="Total: $TOTAL_TESTS, Passed: $PASSED_TESTS, Failed: $FAILED_TESTS"
+          echo "results=$RESULTS" >> $GITHUB_OUTPUT
+          echo "Test Results: $RESULTS"
+        else
+          echo "results=No results file found" >> $GITHUB_OUTPUT
+          echo "No test results file found"
+        fi
+
+        # Check if tests failed
+        if [ "$CYPRESS_FAILED" = "true" ]; then
+          echo "Cypress tests failed"
+          exit 1
+        fi
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cypress-results-${{ inputs.test-mode }}
+        path: |
+          tests/screenshots/
+          tests/videos/
+          tests/results/
+        retention-days: 7

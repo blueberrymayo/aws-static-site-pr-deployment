@@ -1,0 +1,52 @@
+name: Prevent Direct Push to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-push-method:
+    runs-on: ubuntu-latest
+    name: Check Push Method
+
+    steps:
+      - name: Check if push is from a merge
+        run: |
+          echo "Push event details:"
+          echo "Head commit message: ${{ github.event.head_commit.message }}"
+          echo "Head commit author: ${{ github.event.head_commit.author.name }}"
+          echo "Head commit committer: ${{ github.event.head_commit.committer.name }}"
+
+          # Check if this is a merge commit
+          if [[ "${{ github.event.head_commit.message }}" == Merge* ]]; then
+            echo "✅ This is a merge commit, allowing deployment to proceed"
+            echo "MERGE_COMMIT=true" >> $GITHUB_ENV
+          else
+            echo "❌ This appears to be a direct push to main"
+            echo "MERGE_COMMIT=false" >> $GITHUB_ENV
+          fi
+
+      - name: Fail if direct push detected
+        if: env.MERGE_COMMIT == 'false'
+        run: |
+          echo "🚨 Direct push to main branch detected!"
+          echo ""
+          echo "This repository enforces a PR-only workflow."
+          echo "Please:"
+          echo "1. Create a pull request for your changes"
+          echo "2. Get the PR reviewed and approved"
+          echo "3. Merge the PR (not push directly)"
+          echo ""
+          echo "Push details:"
+          echo "- Author: ${{ github.event.head_commit.author.name }}"
+          echo "- Message: ${{ github.event.head_commit.message }}"
+          echo "- SHA: ${{ github.event.head_commit.id }}"
+          echo ""
+          exit 1
+
+      - name: Success message for merge commits
+        if: env.MERGE_COMMIT == 'true'
+        run: |
+          echo "✅ Merge commit detected, deployment can proceed"
+          echo "Commit message: ${{ github.event.head_commit.message }}"

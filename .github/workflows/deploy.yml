@@ -1,0 +1,99 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main  # Adjust this if you deploy from a different branch
+
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+    name: Deploy and Test Production
+
+    steps:
+      - name: Ensure no direct push failure
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == Merge* ]]; then
+            echo "This is a PR merge, proceed with deployment."
+          elif [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "Prevent Push Action failed. Stopping deployment."
+            exit 1
+          fi
+
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # Will be customized during setup
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the app
+        run: ${{ vars.BUILD_COMMAND || 'npm run build' }}
+
+      - name: Run image optimization (if available)
+        run: |
+          if npm run | grep -q "optimize-images"; then
+            echo "Running image optimization..."
+            npm run optimize-images
+          else
+            echo "No image optimization script found, skipping..."
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy to S3 production folder
+        run: |
+          BUILD_DIR="${{ vars.BUILD_DIR || './build' }}"
+          echo "Deploying to production..."
+          echo "Source: ${BUILD_DIR}"
+          echo "Destination: s3://${{ vars.S3_BUCKET_NAME }}/production/"
+
+          aws s3 sync ${BUILD_DIR} s3://${{ vars.S3_BUCKET_NAME }}/production --delete
+
+      - name: Invalidate CloudFront and wait for completion
+        run: |
+          echo "Creating CloudFront invalidation for production..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/production/*" \
+            --query 'Invalidation.Id' --output text)
+
+          echo "Invalidation ID: $INVALIDATION_ID"
+          echo "Waiting for CloudFront invalidation to complete (this may take 5-15 minutes)..."
+
+          timeout 900 aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --id $INVALIDATION_ID || {
+            echo "⚠️ Invalidation wait timed out after 15 minutes"
+            exit 1
+          }
+
+          echo "✅ CloudFront invalidation completed!"
+
+      - name: Test production deployment
+        uses: ./.github/actions/cypress-test
+        with:
+          base-url: 'https://${{ vars.DOMAIN }}'
+          test-mode: 'production-after-cdn-clear'
+          wait-for-server: 'false'
+
+      - name: Report deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Production deployment completed and verified successfully"
+            echo "🌐 https://${{ vars.DOMAIN }} is live with latest changes"
+          else
+            echo "❌ Production deployment verification failed"
+            echo "🚨 Check the test results and deployment status"
+            exit 1
+          fi

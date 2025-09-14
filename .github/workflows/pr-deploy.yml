@@ -1,0 +1,73 @@
+name: PR Deploy (No Auto-Testing)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  deploy-pr:
+    runs-on: ubuntu-latest
+    name: Deploy PR Preview
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # Will be customized during setup
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the app
+        run: ${{ vars.BUILD_COMMAND || 'npm run build' }}
+
+      - name: Run image optimization (if available)
+        run: |
+          if npm run | grep -q "optimize-images"; then
+            echo "Running image optimization..."
+            npm run optimize-images
+          else
+            echo "No image optimization script found, skipping..."
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy PR to S3 and invalidate CloudFront
+        run: |
+          PR_FOLDER_NAME="pr-${{ github.event.pull_request.number }}"
+          BUILD_DIR="${{ vars.BUILD_DIR || './build' }}"
+
+          echo "Deploying to S3..."
+          echo "Source: ${BUILD_DIR}"
+          echo "Destination: s3://${{ vars.S3_BUCKET_NAME }}/${PR_FOLDER_NAME}/"
+
+          aws s3 sync ${BUILD_DIR} s3://${{ vars.S3_BUCKET_NAME }}/${PR_FOLDER_NAME} --delete
+
+          echo "Starting CloudFront invalidation..."
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/${PR_FOLDER_NAME}/*"
+
+      - name: Comment on PR with preview URL
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **PR Preview Deployed:** https://pr-${{ github.event.pull_request.number }}.${{ vars.DOMAIN }}\n\n💡 **To run E2E tests:** Comment "please test" on this PR\n\n⏳ CloudFront cache may take 5-15 minutes to update\n\n📊 **Deployment Details:**\n- PR: #${{ github.event.pull_request.number }}\n- Branch: \`${{ github.event.pull_request.head.ref }}\`\n- Commit: \`${{ github.event.pull_request.head.sha }}\``
+            })

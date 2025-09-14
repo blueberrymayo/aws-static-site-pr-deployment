@@ -1,0 +1,87 @@
+<html>
+<head>
+    <title>Site Error</title>
+    <script type="text/javascript">
+        // Get the original URL and referrer URL
+        const referrerUrl = document.referrer;
+        const originalUrl = window.location.href;
+
+        // Log the original URL and the referrer
+        console.log("Original URL: " + originalUrl);
+        console.log("Referrer URL: " + referrerUrl);
+
+        const url = new URL(originalUrl);
+
+        // Components of the URL
+        const protocol = url.protocol;   // e.g., 'https:'
+        const hostname = url.hostname;   // e.g., 'example.com'
+        const port = url.port;           // e.g., '8080' (if specified)
+        const pathname = url.pathname;   // e.g., '/path/to/page'
+        const search = url.search;       // e.g., '?query=string'
+        const hash = url.hash;           // e.g., '#section'
+
+        const encodedOriginalUrl = encodeURIComponent(originalUrl);
+
+        // Extract subdomain
+        const parts = hostname.split('.');
+        const subdomain = (parts.length > 2 && parts[0] !== 'www') ? parts[0] : null;
+        const rootDomain = parts.slice(-2).join('.');
+
+        // Check if the request is for a file (has an extension)
+        const isFile = pathname.split('/').pop().includes('.');
+
+        // if it was a file, then assume that the subdomain is valid and redirect to the subdomain's error page
+        var targetURL = "";
+        if (isFile) {
+            targetURL = `${protocol}${port}//${hostname}/error/?originalURL=${encodedOriginalUrl}`;
+        } else {
+            // if it was not a file, then assume that the subdomain is invalid and redirect to the root error page
+            targetURL = `${protocol}${port}//${rootDomain}/error/?originalURL=${encodedOriginalUrl}`;
+        }
+        if (targetURL !== "") {
+            console.log("Redirecting to: " + targetURL);
+            window.location.href = targetURL;
+        }
+    </script>
+</head>
+<body>
+    <h1>Site Error</h1>
+    <p>Redirecting to the appropriate error page...</p>
+    <p>Redirecting to: <a id="redirectURL" href="error.html">error.html</a></p>
+
+    <h2>URL Components</h2>
+    <ul>
+        <li>Target URL: <span id="targetURL"></span></li>
+        <li>Referrer URL: <span id="referrerUrl"></span></li>
+        <li>Original URL: <span id="originalUrl"></span></li>
+        <li>Root Domain: <span id="rootDomain"></span></li>
+        <li>Protocol: <span id="protocol"></span></li>
+        <li>Hostname: <span id="hostname"></span></li>
+        <li>Port: <span id="port"></span></li>
+        <li>Pathname: <span id="pathname"></span></li>
+        <li>Search: <span id="search"></span></li>
+        <li>Hash: <span id="hash"></span></li>
+        <li>Subdomain: <span id="subdomain"></span></li>
+        <li>Is File: <span id="isFile"></span></li>
+    </ul>
+
+    <script type="text/javascript">
+        document.getElementById("redirectURL").href = targetURL;
+        document.getElementById("redirectURL").innerText = targetURL;
+
+        document.getElementById("targetURL").innerText = targetURL;
+        document.getElementById("referrerUrl").innerText = referrerUrl;
+        document.getElementById("originalUrl").innerText = originalUrl;
+        document.getElementById("rootDomain").innerText = rootDomain;
+
+        document.getElementById("protocol").innerText = protocol;
+        document.getElementById("hostname").innerText = hostname;
+        document.getElementById("port").innerText = port;
+        document.getElementById("pathname").innerText = pathname;
+        document.getElementById("search").innerText = search;
+        document.getElementById("hash").innerText = hash;
+        document.getElementById("subdomain").innerText = subdomain;
+        document.getElementById("isFile").innerText = isFile;
+    </script>
+</body>
+</html>
