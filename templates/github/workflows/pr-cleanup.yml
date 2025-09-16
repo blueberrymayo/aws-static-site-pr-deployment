@@ -11,7 +11,8 @@ jobs:
   cleanup-pr-deployment:
     runs-on: ubuntu-latest
     name: Cleanup PR Deployment
-    if: github.event.pull_request.merged == true || github.event.pull_request.merged == false
+    # Skip execution on template repository or when PR is not closed
+    if: github.repository != 'Artificer-Innovations/aws-static-site-pr-deployment' && (github.event.pull_request.merged == true || github.event.pull_request.merged == false)
 
     steps:
       - name: Check deployment configuration

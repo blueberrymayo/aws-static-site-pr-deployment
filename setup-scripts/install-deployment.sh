@@ -78,8 +78,8 @@ NODE_VERSION=${NODE_VERSION:-18}
 echo ""
 echo "📁 Copying deployment files..."
 
-# Copy GitHub Actions
-cp -r .github "$TARGET_PROJECT/"
+# Copy GitHub Actions from templates
+cp -r templates/github "$TARGET_PROJECT/.github"
 
 # Copy CloudFront setup
 cp -r .cloudfront "$TARGET_PROJECT/"

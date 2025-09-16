@@ -9,6 +9,8 @@ jobs:
   deploy-and-test:
     runs-on: ubuntu-latest
     name: Deploy and Test Production
+    # Skip execution on template repository
+    if: github.repository != 'Artificer-Innovations/aws-static-site-pr-deployment'
 
     steps:
       - name: Check deployment configuration
