@@ -11,6 +11,35 @@ jobs:
     name: Deploy and Test Production
 
     steps:
+      - name: Check deployment configuration
+        run: |
+          echo "🔧 Checking deployment configuration..."
+
+          MISSING_CONFIG=()
+
+          # Check required secrets
+          [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] && MISSING_CONFIG+=("AWS_ACCESS_KEY_ID (secret)")
+          [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ] && MISSING_CONFIG+=("AWS_SECRET_ACCESS_KEY (secret)")
+
+          # Check required variables
+          [ -z "${{ vars.AWS_REGION }}" ] && MISSING_CONFIG+=("AWS_REGION (variable)")
+          [ -z "${{ vars.S3_BUCKET_NAME }}" ] && MISSING_CONFIG+=("S3_BUCKET_NAME (variable)")
+          [ -z "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" ] && MISSING_CONFIG+=("CLOUDFRONT_DISTRIBUTION_ID (variable)")
+          [ -z "${{ vars.DOMAIN }}" ] && MISSING_CONFIG+=("DOMAIN (variable)")
+
+          if [ ${#MISSING_CONFIG[@]} -gt 0 ]; then
+            echo "❌ Missing required configuration:"
+            printf "   • %s\n" "${MISSING_CONFIG[@]}"
+            echo ""
+            echo "📝 This is a template repository. To configure deployment:"
+            echo "   1. Go to Settings > Secrets and variables > Actions"
+            echo "   2. Add the missing secrets and variables listed above"
+            echo "   3. See docs/GITHUB-SETUP.md for detailed instructions"
+            exit 1
+          fi
+
+          echo "✅ All required configuration found, proceeding with deployment..."
+
       - name: Ensure no direct push failure
         run: |
           if [[ "${{ github.event.head_commit.message }}" == Merge* ]]; then
