@@ -71,20 +71,3 @@ jobs:
             echo "ℹ️ PR deployment folder ${PR_FOLDER_NAME} not found, nothing to clean up"
           fi
 
-      - name: Comment cleanup status
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
-            const message = '${{ job.status }}' === 'success'
-              ? `PR deployment folder \`pr-${{ github.event.pull_request.number }}\` has been cleaned up from S3`
-              : `Failed to clean up PR deployment folder \`pr-${{ github.event.pull_request.number }}\``;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🧹 **PR Cleanup:** ${status} ${message}`
-            })
