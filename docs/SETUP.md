@@ -38,7 +38,7 @@ cd template
 
 ```bash
 # Copy files to your project
-cp -r .github /path/to/your/project/
+cp -r templates/github /path/to/your/project/.github
 cp -r .cloudfront /path/to/your/project/
 cp setup-scripts/install-deployment.sh /path/to/your/project/
 

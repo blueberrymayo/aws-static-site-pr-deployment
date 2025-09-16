@@ -9,6 +9,8 @@ jobs:
   check-push-method:
     runs-on: ubuntu-latest
     name: Check Push Method
+    # Skip execution on template repository
+    if: github.repository != 'Artificer-Innovations/aws-static-site-pr-deployment'
 
     steps:
       - name: Check if push is from a merge

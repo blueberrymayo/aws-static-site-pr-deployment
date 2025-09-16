@@ -61,7 +61,7 @@ GitHub PR → GitHub Actions → AWS S3 → CloudFront → PR Subdomain
 
 1. **Copy files to existing project:**
    ```bash
-   cp -r .github your-existing-project/
+   cp -r templates/github your-existing-project/.github
    cp -r .cloudfront your-existing-project/
    cp setup-scripts/install-deployment.sh your-existing-project/
    ```
@@ -74,17 +74,18 @@ GitHub PR → GitHub Actions → AWS S3 → CloudFront → PR Subdomain
 
 ```
 aws-static-site-pr-deployment/
-├── .github/
-│   ├── workflows/
-│   │   ├── pr-deploy.yml              # Deploys PR previews
-│   │   ├── deploy.yml                 # Production deployment
-│   │   ├── pr-test-on-comment.yml     # E2E testing on PR comment
-│   │   ├── pr-cleanup.yml            # Cleanup old PR deployments
-│   │   └── prevent-push-main.yml     # Enforce PR-only workflow
-│   ├── actions/
-│   │   └── cypress-test/             # Reusable Cypress testing action
-│   └── scripts/
-│       └── generate-pr-bucket-name.sh
+├── templates/
+│   └── github/
+│       ├── workflows/
+│       │   ├── pr-deploy.yml              # Deploys PR previews
+│       │   ├── deploy.yml                 # Production deployment
+│       │   ├── pr-test-on-comment.yml     # E2E testing on PR comment
+│       │   ├── pr-cleanup.yml            # Cleanup old PR deployments
+│       │   └── prevent-push-main.yml     # Enforce PR-only workflow
+│       ├── actions/
+│       │   └── cypress-test/             # Reusable Cypress testing action
+│       └── scripts/
+│           └── generate-pr-bucket-name.sh
 ├── .cloudfront/
 │   ├── functions/
 │   │   └── SubdomainFolders.js       # CloudFront routing function
